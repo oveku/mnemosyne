@@ -1,0 +1,75 @@
+{
+  "name": "mnemosyne-vscode",
+  "displayName": "Mnemosyne",
+  "description": "Persistent memory layer for AI coding agents. Auto-bootstrap context on startup, auto-commit sessions on close.",
+  "version": "1.0.0",
+  "publisher": "cerberos",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oveku/mnemosyne.git"
+  },
+  "engines": {
+    "vscode": "^1.86.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "mnemosyne.setSessionSummary",
+        "title": "Mnemosyne: Set Session Summary"
+      },
+      {
+        "command": "mnemosyne.commitSession",
+        "title": "Mnemosyne: Commit Session Now"
+      },
+      {
+        "command": "mnemosyne.showBootstrap",
+        "title": "Mnemosyne: Show Bootstrap Context"
+      }
+    ],
+    "configuration": {
+      "title": "Mnemosyne",
+      "properties": {
+        "mnemosyne.serverUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Mnemosyne MCP server endpoint URL (e.g. http://your-server:8010/mcp)."
+        },
+        "mnemosyne.autoBootstrap": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically load memory context when VS Code starts."
+        },
+        "mnemosyne.autoCommitOnClose": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically commit session when VS Code closes."
+        },
+        "mnemosyne.workspaceHint": {
+          "type": "string",
+          "default": "",
+          "description": "Optional workspace identifier override for session commits. Defaults to workspace folder name."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npx @vscode/vsce package --no-dependencies",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/vscode": "^1.86.0",
+    "@vscode/vsce": "^3.2.0",
+    "typescript": "^5.3.3"
+  }
+}

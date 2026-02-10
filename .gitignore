@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+extension/out/
+*.vsix
+
+# IDE
+.idea/
+.vscode/mcp.json
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local-only docs/social drafts
+docs/visual-identity.md
+Social Media/linkedin_mnemosyne_post.md
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Docker
+docker-compose.override.yml
+
+# Backups (stored locally, not in repo)
+backups/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
