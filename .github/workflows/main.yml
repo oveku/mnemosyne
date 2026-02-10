@@ -1,0 +1,25 @@
+name: public-readiness
+
+on: [pull_request, push]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run ESLint
+        run: npm run lint
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: GitLeaks Scan
+        uses: zricethezav/gitleaks-action@v2
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run OWASP Dependency Check
+        run: dependency-check --project "myrepo" --scan .
