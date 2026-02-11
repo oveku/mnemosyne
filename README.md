@@ -78,6 +78,12 @@ code --install-extension mnemosyne-vscode-0.1.0.vsix
 ```
 
 Then set `mnemosyne.serverUrl` to `http://localhost:8010/mcp` in VS Code Settings.
+```
+Open Settings: Ctrl+,
+In the search bar, type: mnemosyne.serverUrl (or just mnemosyne)
+Find the setting Mnemosyne: Server Url
+Set it to: http://localhost:8010/mcp
+```
 
 ## Configuration
 
