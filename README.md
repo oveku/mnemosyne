@@ -99,6 +99,16 @@ cp .env.example server/.env
 | `NEO4J_USER` | `neo4j` | Neo4j username |
 | `MNEMOSYNE_PORT` | `8010` | MCP server port |
 
+To test that memories are stored, open localhost:7474 (or whatever you set up if you changed it), log in, and run the following in your browser. If you have created one or more memories, it should show up.
+```
+MATCH (m:MemoryItem)
+WITH m
+ORDER BY m.updated_at DESC
+LIMIT 200
+OPTIONAL MATCH (m)-[r:TAGGED_WITH]->(t:Tag)
+RETURN m, r, t;
+```
+
 ## Graph Schema
 
 ```
