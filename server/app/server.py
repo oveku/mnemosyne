@@ -136,13 +136,14 @@ TOOLS = [
 ]
 
 
-def handle_tool_call(tool_name: str, arguments: dict) -> Any:
+def handle_tool_call(tool_name: str, arguments: dict, context: dict | None = None) -> Any:
     """Route a tool call to the appropriate storage method."""
     if tool_name == "mnemosyne_bootstrap":
         return _run_async(
             storage.bootstrap(
                 arguments.get("limit_pinned", 8),
                 arguments.get("limit_recent", 10),
+                context=context,
             )
         )
     elif tool_name == "mnemosyne_write":
@@ -154,6 +155,7 @@ def handle_tool_call(tool_name: str, arguments: dict) -> Any:
                 arguments["content"],
                 tags=tags,
                 pinned=arguments.get("pinned", False),
+                context=context,
             )
         )
     elif tool_name == "mnemosyne_search":
@@ -161,6 +163,7 @@ def handle_tool_call(tool_name: str, arguments: dict) -> Any:
             storage.search_memory(
                 arguments["query"],
                 arguments.get("limit", 8),
+                context=context,
             )
         )
     elif tool_name == "mnemosyne_commit_session":
@@ -172,6 +175,7 @@ def handle_tool_call(tool_name: str, arguments: dict) -> Any:
                 arguments["summary"],
                 decisions=decisions,
                 next_steps=next_steps,
+                context=context,
             )
         )
     elif tool_name == "mnemosyne_last_session":
@@ -179,6 +183,7 @@ def handle_tool_call(tool_name: str, arguments: dict) -> Any:
             storage.last_session(
                 arguments.get("workspace_hint", "global"),
                 arguments.get("limit", 3),
+                context=context,
             )
         )
     else:
@@ -217,7 +222,21 @@ class MCPHandler(BaseHTTPRequestHandler):
             elif method == "tools/call":
                 tool_name = params.get("name")
                 arguments = params.get("arguments", {})
-                tool_result = handle_tool_call(tool_name, arguments)
+                # Construct request context from headers (optional; dev-friendly)
+                user_id = self.headers.get("X-User-Id")
+                space_id = self.headers.get("X-Space-Id")
+                allowed_spaces: list[str] | None = None
+                if space_id:
+                    allowed_spaces = [space_id]
+                elif user_id:
+                    allowed_spaces = [f"personal:{user_id}"]
+                context = {
+                    "user_id": user_id,
+                    "space_id": space_id,
+                    "allowed_spaces": allowed_spaces,
+                }
+
+                tool_result = handle_tool_call(tool_name, arguments, context)
                 result = {
                     "content": [
                         {

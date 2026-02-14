@@ -32,6 +32,7 @@ services:
       - NEO4J_USER=${NEO4J_USER:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-mnemosyne}
       - NEO4J_DATABASE=${NEO4J_DATABASE:-neo4j}
+      - MNEMOSYNE_MULTI_TENANT=${MNEMOSYNE_MULTI_TENANT:-0}
     ports:
       - "${MNEMOSYNE_PORT:-8010}:8010"
     depends_on:
