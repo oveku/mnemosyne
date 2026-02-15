@@ -2,7 +2,7 @@
   "name": "mnemosyne-vscode",
   "displayName": "Mnemosyne",
   "description": "Persistent memory layer for AI coding agents. Auto-bootstrap context on startup, auto-commit sessions on close.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "cerberos",
   "license": "MIT",
   "repository": {

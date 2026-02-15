@@ -274,7 +274,7 @@ class MCPHandler(BaseHTTPRequestHandler):
                 result = {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {"tools": {}},
-                    "serverInfo": {"name": "mnemosyne", "version": "2.0.0"},
+                    "serverInfo": {"name": "mnemosyne", "version": "1.0.1"},
                 }
             elif method in ("notifications/initialized", "initialized"):
                 result = {}

@@ -21,7 +21,8 @@ what was decided, and what comes next — across sessions, workspaces, and proje
 ### Components
 
 1. **MCP Server** (`server/app/server.py`) — Python HTTP server implementing MCP JSON-RPC
-   - 5 tools: bootstrap, write, search, commit_session, last_session
+   - 6 tools: bootstrap, write, read, search, commit_session, last_session
+   - Context pollution mitigation with bootstrap modes (thin/hybrid/full) and token budgeting
    - Neo4j knowledge graph storage backend
    - Configurable via environment variables (see `.env.example`)
 
@@ -48,7 +49,8 @@ what was decided, and what comes next — across sessions, workspaces, and proje
 ## Graph Schema
 
 ```
-(:MemoryItem {kind, title, content, pinned, created_at, updated_at})
+(:MemoryItem {kind, title, content, content_compact, pinned, importance,
+              workspace_hint, source, created_at, updated_at})
   -[:TAGGED_WITH]-> (:Tag {name})
   -[:DECIDED_IN]-> (:Session)
   -[:RELATES_TO]-> (:MemoryItem)
@@ -96,4 +98,4 @@ User-level VS Code MCP config:
 - [x] Phase 3: Remove legacy storage, go public-ready
 - [ ] Phase 4: Enhanced graph queries (relationship traversal, semantic search)
 - [ ] Phase 5: Multi-agent memory sharing with access control
-- [ ] Phase 6: Memory compaction and summarization
+- [x] Phase 6: Context pollution mitigation (bootstrap modes, ranking, token budgeting, `mnemosyne_read`)

@@ -8,11 +8,13 @@ Mnemosyne (Μνημοσύνη) — Titaness of Memory — remembers what happene
 
 ## Features
 
-- **Bootstrap** — Loads pinned and recent memories at the start of every AI session
-- **Write** — Stores decisions, commands, patterns, answers, and notes (deduplicates by kind + title)
-- **Search** — Full-text search across all stored memories via Neo4j fulltext indexes
+- **Bootstrap** — Loads pinned and recent memories at session start, with configurable modes (thin/hybrid/full) and token budgeting to keep context lean
+- **Write** — Stores decisions, commands, patterns, answers, and notes (deduplicates by kind + title), with optional compact content for efficient retrieval
+- **Read** — Retrieves a single memory item by ID with full or compact content on demand
+- **Search** — Full-text search across all stored memories via Neo4j fulltext indexes, with snippet mode for lighter results
 - **Commit Session** — Saves session summaries with decisions and next steps
 - **Last Session** — Recalls what happened in the previous session for any workspace
+- **Context Pollution Prevention** — Three-lever system (write-time hygiene, store-time structure, read-time shaping) keeps your AI's context window focused on high-signal information
 - **Knowledge Graph** — Memories, tags, sessions, and workspaces are graph nodes with typed relationships
 
 ## Architecture
@@ -74,7 +76,7 @@ Auto-bootstraps memory on startup and auto-commits on close:
 
 ```bash
 cd extension && npm install && npm run package
-code --install-extension mnemosyne-vscode-0.1.0.vsix
+code --install-extension mnemosyne-vscode-1.0.1.vsix
 ```
 
 Then set `mnemosyne.serverUrl` to `http://localhost:8010/mcp` in VS Code Settings.
@@ -112,7 +114,8 @@ RETURN m, r, t;
 ## Graph Schema
 
 ```
-(:MemoryItem {kind, title, content, pinned, created_at, updated_at})
+(:MemoryItem {kind, title, content, content_compact, pinned, importance,
+              workspace_hint, source, created_at, updated_at})
   -[:TAGGED_WITH]-> (:Tag {name})
 
 (:Session {workspace_hint, summary, decisions, next_steps, created_at})
@@ -124,11 +127,27 @@ RETURN m, r, t;
 
 | Tool | Description |
 |------|-------------|
-| `mnemosyne_bootstrap` | Returns pinned + recent memory items for session context |
-| `mnemosyne_write` | Stores a memory item (deduplicates by kind + title) |
-| `mnemosyne_search` | Full-text search across all memories |
+| `mnemosyne_bootstrap` | Returns pinned + recent memory items for session context. Supports `mode` (thin/hybrid/full), `max_tokens` budget, and `workspace_hint` scoping |
+| `mnemosyne_write` | Stores a memory item (deduplicates by kind + title). Accepts optional `content_compact`, `importance`, `workspace_hint`, and `source` |
+| `mnemosyne_read` | Retrieves a single memory item by ID with full or compact content |
+| `mnemosyne_search` | Full-text search across all memories. Returns compact snippets by default with `has_full` indicator |
 | `mnemosyne_commit_session` | Commits end-of-session summary with decisions and next steps |
 | `mnemosyne_last_session` | Returns the most recent sessions for a workspace |
+
+## Context Pollution Prevention
+
+As your memory store grows, naively loading everything into the AI's context window wastes tokens on low-signal content — stale notes, verbose logs, irrelevant decisions. Mnemosyne v1.0.1 addresses this with a three-lever system:
+
+**Lever A — Write-time hygiene.** Each memory kind has a clear contract: decisions capture one decision with rationale, patterns describe a reusable approach, commands store a verified snippet. When content is long, the server auto-generates a compact summary (first ~200 characters at a sentence boundary) so bootstrap never needs to load the full text.
+
+**Lever B — Store-time structure.** Memory items carry `content_compact` alongside full content, plus `importance` (0–100), `workspace_hint`, and `source` fields. This metadata powers smart ranking without requiring an LLM at read time.
+
+**Lever C — Read-time shaping.** Bootstrap ranks items by `kind_weight × recency_decay × importance × workspace_match` and respects a configurable token budget. Three modes control verbosity:
+- **thin** — compact content only (default for the VS Code extension)
+- **hybrid** — full content for short commands/patterns, compact for everything else
+- **full** — legacy behavior, returns everything
+
+When an agent needs the full detail behind a compact summary, it calls `mnemosyne_read` with the item's ID — load little, recall everything.
 
 ## Testing
 
@@ -166,7 +185,7 @@ mnemosyne/
 │   ├── Dockerfile          # MCP server container image
 │   ├── mnemosyne_proxy.py  # Stdio-to-HTTP MCP proxy
 │   ├── app/
-│   │   ├── server.py       # Main HTTP MCP server
+│   │   ├── server.py       # Main HTTP MCP server (6 tools)
 │   │   ├── requirements.txt
 │   │   └── storage/
 │   │       ├── base.py           # Abstract storage interface
@@ -185,6 +204,7 @@ mnemosyne/
 │   └── backup.ps1          # Neo4j backup script
 └── docs/
     ├── INSTALL.md          # Full installation guide
+    ├── shared-storage.md   # Multi-tenant shared spaces design
     └── visual-identity.md  # Brand guidelines and image prompts
 ```
 
