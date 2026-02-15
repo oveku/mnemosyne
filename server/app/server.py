@@ -181,10 +181,10 @@ def handle_tool_call(tool_name: str, arguments: dict, context: dict | None = Non
                     "workspace_hint", "global"
                 ),
                 mode=arguments.get("mode", "full"),
-                max_tokens=arguments.get("max_tokens", 800),
+                max_tokens=arguments.get("max_tokens", 0),
                 max_items=arguments.get("max_items", 15),
                 include_sessions=arguments.get(
-                    "include_sessions", True
+                    "include_sessions", False
                 ),
                 context=context,
             )
@@ -218,8 +218,10 @@ def handle_tool_call(tool_name: str, arguments: dict, context: dict | None = Non
             storage.search_memory(
                 arguments["query"],
                 arguments.get("limit", 8),
-                prefer=arguments.get("prefer", "compact"),
-                snippet_chars=arguments.get("snippet_chars", 400),
+                prefer=arguments.get("prefer", "full"),
+                snippet_chars=arguments.get(
+                    "snippet_chars", 400
+                ),
                 context=context,
             )
         )

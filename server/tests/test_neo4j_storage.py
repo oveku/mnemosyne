@@ -106,6 +106,40 @@ async def test_bootstrap(storage):
 
 
 @pytest.mark.asyncio
+async def test_bootstrap_legacy_call_backward_compat(storage):
+    """Calling bootstrap() with NO new args behaves like the old API.
+
+    - Returns full content (mode defaults to 'full')
+    - No budget truncation (max_tokens defaults to 0/unlimited)
+    - No last_session key (include_sessions defaults to False)
+    - Response shape is {pinned: [...], recent: [...]}
+    """
+    full = "Complete legacy content for compat test"
+    await storage.write_memory(
+        kind="note",
+        title="Neo4j Test: Legacy Compat",
+        content=full,
+        pinned=True,
+    )
+
+    # Call exactly like the old API: positional limit args only
+    result = await storage.bootstrap(10, 10)
+
+    assert "pinned" in result
+    assert "recent" in result
+    # Must NOT have last_session since include_sessions=False by default
+    assert "last_session" not in result
+
+    found = [
+        p for p in result["pinned"]
+        if p["title"] == "Neo4j Test: Legacy Compat"
+    ]
+    assert len(found) > 0
+    # Full content returned, not truncated
+    assert found[0]["content"] == full
+
+
+@pytest.mark.asyncio
 async def test_commit_and_last_session(storage):
     await storage.commit_session(
         workspace_hint="neo4j-pytest",

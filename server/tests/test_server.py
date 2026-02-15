@@ -51,6 +51,8 @@ class TestBootstrap:
         assert "recent" in result
         assert isinstance(result["pinned"], list)
         assert isinstance(result["recent"], list)
+        # Legacy call should NOT include last_session
+        assert "last_session" not in result
 
     def test_bootstrap_with_limits(self, http_client):
         response = call_tool(
@@ -61,6 +63,8 @@ class TestBootstrap:
         result = parse_tool_result(response)
         assert len(result["pinned"]) <= 2
         assert len(result["recent"]) <= 3
+        # Still legacy shape
+        assert "last_session" not in result
 
 
 class TestWriteMemory:

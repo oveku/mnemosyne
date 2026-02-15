@@ -422,7 +422,7 @@ class Neo4jStorage(MemoryStorage):
         self,
         query: str,
         limit: int = 8,
-        prefer: ContentPrefer = "compact",
+        prefer: ContentPrefer = "full",
         snippet_chars: int = 400,
         context: RequestContext | None = None,
     ) -> list[dict[str, Any]]:
@@ -559,9 +559,9 @@ class Neo4jStorage(MemoryStorage):
         limit_recent: int = 10,
         workspace_hint: str = "global",
         mode: BootstrapMode = "full",
-        max_tokens: int = 800,
+        max_tokens: int = 0,
         max_items: int = 15,
-        include_sessions: bool = True,
+        include_sessions: bool = False,
         context: RequestContext | None = None,
     ) -> dict[str, Any]:
         limit_pinned = max(0, min(limit_pinned, 25))

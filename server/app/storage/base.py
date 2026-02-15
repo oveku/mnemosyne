@@ -82,7 +82,7 @@ class MemoryStorage(ABC):
         self,
         query: str,
         limit: int = 8,
-        prefer: ContentPrefer = "compact",
+        prefer: ContentPrefer = "full",
         snippet_chars: int = 400,
         context: RequestContext | None = None,
     ) -> list[dict[str, Any]]:
@@ -103,9 +103,9 @@ class MemoryStorage(ABC):
         limit_recent: int = 10,
         workspace_hint: str = "global",
         mode: BootstrapMode = "full",
-        max_tokens: int = 800,
+        max_tokens: int = 0,
         max_items: int = 15,
-        include_sessions: bool = True,
+        include_sessions: bool = False,
         context: RequestContext | None = None,
     ) -> dict[str, Any]:
         """
@@ -113,10 +113,10 @@ class MemoryStorage(ABC):
 
         New parameters (all optional, backward-compatible):
           workspace_hint   – scope to relevant workspace (default "global")
-          mode             – "thin" | "hybrid" | "full" (default "full" for Phase 1)
-          max_tokens       – budget cap (~4 chars/token); 0 = unlimited
+          mode             – "thin" | "hybrid" | "full" (default "full")
+          max_tokens       – budget cap (~4 chars/token); 0 = unlimited (default 0)
           max_items        – hard limit on total items returned
-          include_sessions – include last session summary in output
+          include_sessions – include last session summary (default False)
 
         Returns {"pinned": [...], "recent": [...], "last_session": {...} | None}
         """
