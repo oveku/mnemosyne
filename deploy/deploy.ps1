@@ -30,7 +30,7 @@ $ErrorActionPreference = "Stop"
 if (-not $SshHost) { $SshHost = "mnemosyne-host" }
 if (-not $RemoteDir) { $RemoteDir = "/opt/mnemosyne" }
 
-$LOCAL_SERVER = Join-Path $PSScriptRoot ".." "server"
+$LOCAL_SERVER = Join-Path (Join-Path $PSScriptRoot "..") "server"
 
 function Write-Status {
     param([string]$Message, [string]$Color = "White")
@@ -50,7 +50,7 @@ Write-Status "SSH connection OK" "Green"
 # Backup existing data if requested
 if ($Backup) {
     Write-Status "Backing up Neo4j data..." "Yellow"
-    $backupDir = Join-Path $PSScriptRoot ".." "backups" (Get-Date -Format "yyyy-MM-dd_HHmmss")
+    $backupDir = Join-Path (Join-Path (Join-Path $PSScriptRoot "..") "backups") (Get-Date -Format "yyyy-MM-dd_HHmmss")
     New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 
     ssh $SshHost "docker exec mnemosyne-neo4j neo4j-admin database dump neo4j --to-stdout 2>/dev/null" > "$backupDir/neo4j-dump.dump" 2>$null
@@ -74,7 +74,7 @@ scp "$LOCAL_SERVER/app/storage/base.py" "${SshHost}:${RemoteDir}/app/storage/bas
 scp "$LOCAL_SERVER/app/storage/neo4j_storage.py" "${SshHost}:${RemoteDir}/app/storage/neo4j_storage.py"
 
 # Transfer .env if it exists
-$envFile = Join-Path $PSScriptRoot ".." "server" ".env"
+$envFile = Join-Path (Join-Path $PSScriptRoot "..") "server" | Join-Path -ChildPath ".env"
 if (Test-Path $envFile) {
     scp "$envFile" "${SshHost}:${RemoteDir}/.env"
     Write-Status ".env file transferred" "Green"

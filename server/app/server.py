@@ -285,6 +285,8 @@ class MCPHandler(BaseHTTPRequestHandler):
             elif method == "tools/call":
                 tool_name = params.get("name")
                 arguments = params.get("arguments", {})
+                if not isinstance(arguments, dict):
+                    arguments = {}
                 # Construct request context from headers (optional; dev-friendly)
                 user_id = self.headers.get("X-User-Id")
                 space_id = self.headers.get("X-Space-Id")
