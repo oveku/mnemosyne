@@ -189,3 +189,150 @@ class TestLastSession:
         assert len(result) > 0
         assert "summary" in result[0]
         assert "workspace_hint" in result[0]
+
+
+# --- Context pollution mitigation tests (HTTP) ---
+
+
+class TestReadMemory:
+    def test_read_memory_roundtrip(self, http_client):
+        """Write, then read by id."""
+        write_resp = call_tool(
+            http_client,
+            "mnemosyne_write",
+            {
+                "kind": "decision",
+                "title": "HTTP Read Test",
+                "content": "Full detailed content for HTTP read test",
+                "content_compact": "Short summary",
+                "workspace_hint": "mnemosyne-pytest",
+                "importance": 70,
+                "source": "agent",
+            },
+        )
+        write_result = parse_tool_result(write_resp)
+        assert write_result["ok"] is True
+        item_id = write_result["id"]
+
+        # Read full
+        read_resp = call_tool(
+            http_client,
+            "mnemosyne_read",
+            {"id": item_id, "prefer": "full"},
+        )
+        read_result = parse_tool_result(read_resp)
+        assert read_result is not None
+        assert read_result["content"] == (
+            "Full detailed content for HTTP read test"
+        )
+        assert read_result["content_compact"] == "Short summary"
+
+    def test_read_memory_not_found(self, http_client):
+        """Read unknown id returns null/None."""
+        resp = call_tool(
+            http_client,
+            "mnemosyne_read",
+            {
+                "id": "4:xxxxxxxx-xxxx-xxxx-xxxx-"
+                "xxxxxxxxxxxx:999999",
+            },
+        )
+        result = parse_tool_result(resp)
+        assert result is None
+
+
+class TestBootstrapModes:
+    def test_bootstrap_thin_mode(self, http_client):
+        """Bootstrap with mode=thin returns compact content."""
+        call_tool(
+            http_client,
+            "mnemosyne_write",
+            {
+                "kind": "decision",
+                "title": "HTTP Thin Test",
+                "content": "Very long " * 100,
+                "content_compact": "Short thin test",
+                "pinned": True,
+            },
+        )
+        response = call_tool(
+            http_client,
+            "mnemosyne_bootstrap",
+            {
+                "mode": "thin",
+                "max_tokens": 800,
+                "include_sessions": False,
+            },
+        )
+        result = parse_tool_result(response)
+        assert "pinned" in result
+        assert "recent" in result
+        found = [
+            p for p in result["pinned"]
+            if p["title"] == "HTTP Thin Test"
+        ]
+        if found:
+            assert found[0]["content"] == "Short thin test"
+            assert found[0]["has_full"] is True
+
+    def test_bootstrap_with_workspace_hint(self, http_client):
+        response = call_tool(
+            http_client,
+            "mnemosyne_bootstrap",
+            {
+                "workspace_hint": "mnemosyne-pytest",
+                "mode": "thin",
+            },
+        )
+        result = parse_tool_result(response)
+        assert "pinned" in result
+        assert "recent" in result
+
+    def test_bootstrap_includes_sessions(self, http_client):
+        call_tool(
+            http_client,
+            "mnemosyne_commit_session",
+            {
+                "workspace_hint": "mnemosyne-pytest",
+                "summary": "Session for bootstrap test",
+            },
+        )
+        response = call_tool(
+            http_client,
+            "mnemosyne_bootstrap",
+            {
+                "workspace_hint": "mnemosyne-pytest",
+                "include_sessions": True,
+            },
+        )
+        result = parse_tool_result(response)
+        assert "last_session" in result
+
+
+class TestSearchModes:
+    def test_search_compact_mode(self, http_client):
+        call_tool(
+            http_client,
+            "mnemosyne_write",
+            {
+                "kind": "note",
+                "title": "HTTP Search Compact Test",
+                "content": "Detailed HTTP content " * 50,
+                "content_compact": "Short HTTP summary",
+            },
+        )
+        response = call_tool(
+            http_client,
+            "mnemosyne_search",
+            {
+                "query": "HTTP Search Compact Test",
+                "prefer": "compact",
+            },
+        )
+        result = parse_tool_result(response)
+        found = [
+            r for r in result
+            if r["title"] == "HTTP Search Compact Test"
+        ]
+        if found:
+            assert found[0]["has_full"] is True

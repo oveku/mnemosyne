@@ -14,11 +14,22 @@ interface BootstrapItem {
     content: string;
     tags: string;
     updated_at: string;
+    has_full?: boolean;
+}
+
+interface SessionSummary {
+    id: string;
+    created_at: string;
+    workspace_hint: string;
+    summary: string;
+    decisions: string[];
+    next_steps: string[];
 }
 
 interface BootstrapResult {
     pinned: BootstrapItem[];
     recent: BootstrapItem[];
+    last_session?: SessionSummary | null;
 }
 
 interface SessionDraft {
@@ -50,8 +61,13 @@ let outputChannel: vscode.OutputChannel | undefined;
 class MnemosyneClient {
     constructor(private readonly serverUrl: string) { }
 
-    async bootstrap(): Promise<BootstrapResult> {
-        return this.callTool<BootstrapResult>('mnemosyne_bootstrap', {});
+    async bootstrap(workspaceHint: string, mode: string = 'thin', maxTokens: number = 800): Promise<BootstrapResult> {
+        return this.callTool<BootstrapResult>('mnemosyne_bootstrap', {
+            workspace_hint: workspaceHint,
+            mode,
+            max_tokens: maxTokens,
+            include_sessions: true,
+        });
     }
 
     async commitSession(
@@ -169,16 +185,22 @@ async function showBootstrap(config: MnemosyneConfig): Promise<void> {
     }
 
     const client = new MnemosyneClient(config.serverUrl);
+    const workspaceHint = getWorkspaceHint(config);
     try {
-        const result = await client.bootstrap();
-        log('=== MNEMOSYNE BOOTSTRAP ===');
+        const result = await client.bootstrap(workspaceHint, 'thin', 800);
+        log('=== MNEMOSYNE BOOTSTRAP (thin) ===');
 
         log('Pinned Items:');
         if (!result.pinned.length) {
             log('  (none)');
         } else {
             for (const item of result.pinned) {
-                log(`  [${item.kind}] ${item.title}`);
+                const preview = item.content ? item.content.substring(0, 80) : '';
+                const fullIndicator = item.has_full ? ' [+full]' : '';
+                log(`  [${item.kind}] ${item.title}${fullIndicator}`);
+                if (preview) {
+                    log(`    ${preview}${item.content.length > 80 ? '…' : ''}`);
+                }
             }
         }
 
@@ -187,8 +209,18 @@ async function showBootstrap(config: MnemosyneConfig): Promise<void> {
             log('  (none)');
         } else {
             for (const item of result.recent) {
-                log(`  [${item.kind}] ${item.title}`);
+                const preview = item.content ? item.content.substring(0, 80) : '';
+                const fullIndicator = item.has_full ? ' [+full]' : '';
+                log(`  [${item.kind}] ${item.title}${fullIndicator}`);
+                if (preview) {
+                    log(`    ${preview}${item.content.length > 80 ? '…' : ''}`);
+                }
             }
+        }
+
+        if (result.last_session) {
+            log('Last Session:');
+            log(`  ${result.last_session.summary}`);
         }
     } catch (error) {
         log(`Bootstrap failed: ${stringifyError(error)}`);

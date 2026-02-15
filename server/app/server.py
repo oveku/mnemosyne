@@ -78,6 +78,14 @@ TOOLS = [
             "properties": {
                 "limit_pinned": {"type": "integer"},
                 "limit_recent": {"type": "integer"},
+                "workspace_hint": {"type": "string"},
+                "mode": {
+                    "type": "string",
+                    "enum": ["thin", "hybrid", "full"],
+                },
+                "max_tokens": {"type": "integer"},
+                "max_items": {"type": "integer"},
+                "include_sessions": {"type": "boolean"},
             },
         },
     },
@@ -92,8 +100,27 @@ TOOLS = [
                 "content": {"type": "string"},
                 "tags_json": {"type": "string"},
                 "pinned": {"type": "boolean"},
+                "content_compact": {"type": "string"},
+                "workspace_hint": {"type": "string"},
+                "importance": {"type": "integer"},
+                "source": {"type": "string"},
             },
             "required": ["kind", "title", "content"],
+        },
+    },
+    {
+        "name": "mnemosyne_read",
+        "description": "Read a single memory item by id",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "id": {"type": "string"},
+                "prefer": {
+                    "type": "string",
+                    "enum": ["full", "compact"],
+                },
+            },
+            "required": ["id"],
         },
     },
     {
@@ -104,6 +131,11 @@ TOOLS = [
             "properties": {
                 "query": {"type": "string"},
                 "limit": {"type": "integer"},
+                "prefer": {
+                    "type": "string",
+                    "enum": ["compact", "full"],
+                },
+                "snippet_chars": {"type": "integer"},
             },
             "required": ["query"],
         },
@@ -124,7 +156,9 @@ TOOLS = [
     },
     {
         "name": "mnemosyne_last_session",
-        "description": "Get most recent session logs for a workspace",
+        "description": (
+            "Get most recent session logs for a workspace"
+        ),
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -143,6 +177,15 @@ def handle_tool_call(tool_name: str, arguments: dict, context: dict | None = Non
             storage.bootstrap(
                 arguments.get("limit_pinned", 8),
                 arguments.get("limit_recent", 10),
+                workspace_hint=arguments.get(
+                    "workspace_hint", "global"
+                ),
+                mode=arguments.get("mode", "full"),
+                max_tokens=arguments.get("max_tokens", 800),
+                max_items=arguments.get("max_items", 15),
+                include_sessions=arguments.get(
+                    "include_sessions", True
+                ),
                 context=context,
             )
         )
@@ -155,6 +198,18 @@ def handle_tool_call(tool_name: str, arguments: dict, context: dict | None = Non
                 arguments["content"],
                 tags=tags,
                 pinned=arguments.get("pinned", False),
+                content_compact=arguments.get("content_compact"),
+                workspace_hint=arguments.get("workspace_hint"),
+                importance=arguments.get("importance"),
+                source=arguments.get("source"),
+                context=context,
+            )
+        )
+    elif tool_name == "mnemosyne_read":
+        return _run_async(
+            storage.read_memory(
+                arguments["id"],
+                prefer=arguments.get("prefer", "full"),
                 context=context,
             )
         )
@@ -163,12 +218,18 @@ def handle_tool_call(tool_name: str, arguments: dict, context: dict | None = Non
             storage.search_memory(
                 arguments["query"],
                 arguments.get("limit", 8),
+                prefer=arguments.get("prefer", "compact"),
+                snippet_chars=arguments.get("snippet_chars", 400),
                 context=context,
             )
         )
     elif tool_name == "mnemosyne_commit_session":
-        decisions = _ensure_list(arguments.get("decisions_json", "[]"))
-        next_steps = _ensure_list(arguments.get("next_steps_json", "[]"))
+        decisions = _ensure_list(
+            arguments.get("decisions_json", "[]")
+        )
+        next_steps = _ensure_list(
+            arguments.get("next_steps_json", "[]")
+        )
         return _run_async(
             storage.commit_session(
                 arguments["workspace_hint"],

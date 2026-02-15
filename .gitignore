@@ -49,3 +49,4 @@ backups/
 .pytest_cache/
 .coverage
 htmlcov/
+MNEMOSYNE_CONTEXT_POLLUTION_PLAN.md
